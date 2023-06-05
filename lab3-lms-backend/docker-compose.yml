@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  course-backend-app:
+    container_name: course-backend-app
+    build: $PWD/docker/image
+    command:
+      - /var/www/docker/docker-entrypoint
+    environment:
+      # Параметры приложения
+      - APP_ENV=dev
+      - APP_DATABASE_DSN=mysql:dbname=lms_backend;host=course-backend-db
+      - APP_DATABASE_USER=root
+      - APP_DATABASE_PASSWORD=VIzP6LTScyYy
+      # Параметры скрипта docker-entrypoint
+      - USER_ID=${USER_ID:-1000}
+      - USER_NAME=$USER
+      # Параметры расширения XDebug
+      - XDEBUG_MODE=debug
+      - XDEBUG_CONFIG="idekey=123"
+      - PHP_IDE_CONFIG=serverName=localhost
+    working_dir: /var/www
+    volumes:
+      - $PWD/:/var/www
+    depends_on:
+      - course-backend-db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  course-backend-nginx:
+    image: nginx:1.17
+    container_name: course-backend-nginx
+    working_dir: /var/www
+    volumes:
+      - $PWD/:/var/www
+      - $PWD/docker/config/nginx.conf.d/:/etc/nginx/conf.d/:ro
+    depends_on:
+      - course-backend-app
+    ports:
+      - "127.0.0.1:80:80"
+
+  course-backend-db:
+    image: mysql:8.0.32
+    container_name: course-backend-db
+    hostname: course-backend-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=VIzP6LTScyYy
+      - MYSQL_USER=course-backend-app
+      - MYSQL_PASSWORD=kUUTyU7LssSc
+      - MYSQL_DATABASE=lms_backend
+    volumes:
+      - $PWD/docker/config/mysql.conf.d:/etc/mysql/conf.d/:ro
+      - course_backend_db_data:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3306:3306"
+
+volumes:
+  course_backend_db_data:
